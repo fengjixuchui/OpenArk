@@ -19,6 +19,12 @@
 
 class Cmds;
 
+#define TAB_PROCESS 0
+#define TAB_KERNEL 1
+#define TAB_CODERKIT 2
+#define TAB_SCANNER 3
+#define TAB_BUNDLER 4
+
 class OpenArk : public QMainWindow {
 	Q_OBJECT
 public:
@@ -29,6 +35,7 @@ protected:
 
 signals:
 	void signalRefresh();
+	void signalShowPtool(int);
 
 public slots:
 	void onLogOutput(QString log);
@@ -41,16 +48,21 @@ private slots:
 	void onActionReset(bool checked);
 	void onActionOnTop(bool checked);
 	void onActionAbout(bool checked);
+	void onActionSettings(bool checked);
 	void onActionConsole(bool checked);
+	void onActionPtool(bool checked);
+	void onActionManuals(bool checked);
 	void onActionGithub(bool checked);
 	void onActionCoderKit(bool checked);
 	void onActionScanner(bool checked);
 	void onActionBundler(bool checked);
 	void onActionCheckUpdate(bool checked);
+	void onActionLanguage(QAction *act);
 	void onCmdHelp();
 	void onShowConsoleMenu(const QPoint &pt);
 	void onConsoleClear();
 	void onConsoleHelps();
+	void onConsoleHistory();
 	void onCmdInput();
 	void onTabChanged();
 

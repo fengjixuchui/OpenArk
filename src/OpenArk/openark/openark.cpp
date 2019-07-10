@@ -19,8 +19,10 @@
 #include "scanner/scanner.h"
 #include "coderkit/coderkit.h"
 #include "bundler/bundler.h"
+#include "settings/settings.h"
 #include "about/about.h"
 #include "cmds/cmds.h"
+#include "kernel/kernel.h"
 
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkReply>
@@ -40,24 +42,25 @@ void QtMessageHandlerCallback(QtMsgType type, const QMessageLogContext &context,
 	if (!msg.isEmpty()) {
 		fmt = qFormatLogMessage(type, context, msg);
 	}
-	app->onLogOutput(fmt);
+	openark->onLogOutput(fmt);
 }
 
 OpenArk::OpenArk(QWidget *parent) : 
 	QMainWindow(parent)
 {
-	app = this;
+	openark = this;
 	qSetMessagePattern(APP_MESSAGE_PATTERN);
 	qInstallMessageHandler(QtMessageHandlerCallback);
 	UNONE::InterRegisterLogger([&](const std::wstring &log) {
 		onLogOutput(WStrToQ(log));
 	});
-
 	ui.setupUi(this);
+
+	resize(1300, 820);
 	ui.splitter->setStretchFactor(0, 1);
 	ui.splitter->setStretchFactor(1, 5);
 	QString title = QString(tr("OpenArk v%1 ").arg(AppVersion()));
-	title.append(tr(" [build:%1]  ").arg(AppBdTime()));
+	title.append(tr(" [build:%1]  ").arg(AppBuildTime()));
 
 	UNONE::PeX64((CHAR*)GetModuleHandleW(NULL)) ? title.append(tr("64-Bit")) : title.append(tr("32-Bit"));
 
@@ -66,13 +69,23 @@ OpenArk::OpenArk(QWidget *parent) :
 
 	QWidget *widget = new QWidget();
 	QLabel *link = new QLabel(widget);
-	link->setText(tr("<a style='color:blue;a{text-decoration: none}' href=\"https://github.com/BlackINT3/OpenArk\">Project on Github</a>&nbsp;"));
+	link->setText("<a style='color:blue;a{text-decoration: none}' href=\"https://github.com/BlackINT3/OpenArk\">"+ tr("Project on Github")+"</a>&nbsp;");
 	link->setOpenExternalLinks(true);
 
 	stool_ = new QToolBar(widget);
 	stool_->setObjectName(QStringLiteral("statusToolBar"));
 	stool_->setIconSize(QSize(16, 16));
 	stool_->addAction(ui.actionConsole);
+	stool_->addSeparator();
+	stool_->addAction(ui.actionModule);
+	stool_->addAction(ui.actionHandle);
+	stool_->addAction(ui.actionMemory);
+	ui.actionModule->setChecked(false);
+	ui.actionHandle->setChecked(false);
+	ui.actionMemory->setChecked(false);
+	connect(ui.actionModule, SIGNAL(triggered(bool)), this, SLOT(onActionPtool(bool)));
+	connect(ui.actionHandle, SIGNAL(triggered(bool)), this, SLOT(onActionPtool(bool)));
+	connect(ui.actionMemory, SIGNAL(triggered(bool)), this, SLOT(onActionPtool(bool)));
 	//stool_->setStyleSheet("background-color:red");
 
 	QGridLayout *layout = new QGridLayout(widget);
@@ -84,22 +97,41 @@ OpenArk::OpenArk(QWidget *parent) :
 	ui.statusBar->setFixedHeight(28);
 	ui.statusBar->addWidget(widget, 1);
 	connect(ui.actionConsole, SIGNAL(triggered(bool)), this, SLOT(onActionConsole(bool)));
+
 	ui.consoleWidget->hide();
 	ui.actionOnTop->setCheckable(true);
 	ui.actionExit->setShortcut(QKeySequence(Qt::ALT + Qt::Key_F4));
+
+	// Language 
+	QActionGroup *langs = new QActionGroup(this);
+	langs->setExclusive(true);
+	langs->addAction(ui.actionEnglish);
+	langs->addAction(ui.actionZhcn);
+	int lang = OpenArkLanguage::Instance()->GetLanguage();
+	if (lang == 0) {
+		ui.actionEnglish->setChecked(true);
+	} else if (lang == 1)  {
+		ui.actionZhcn->setChecked(true);
+	}
+	connect(langs, SIGNAL(triggered(QAction*)), this, SLOT(onActionLanguage(QAction*)));
+
 	connect(ui.actionExit, &QAction::triggered, this, [=]() { QApplication::quit(); });
 	connect(ui.actionAbout, SIGNAL(triggered(bool)), this, SLOT(onActionAbout(bool)));
+	connect(ui.actionSettings, SIGNAL(triggered(bool)), this, SLOT(onActionSettings(bool)));
 	connect(ui.actionOpen, SIGNAL(triggered(bool)), this, SLOT(onActionOpen(bool)));
 	connect(ui.actionRefresh, SIGNAL(triggered(bool)), this, SLOT(onActionRefresh(bool)));
 	connect(ui.actionReset, SIGNAL(triggered(bool)), this, SLOT(onActionReset(bool)));
 	connect(ui.actionOnTop, SIGNAL(triggered(bool)), this, SLOT(onActionOnTop(bool)));
 	connect(ui.actionGithub, SIGNAL(triggered(bool)), this, SLOT(onActionGithub(bool)));
+	connect(ui.actionManuals, SIGNAL(triggered(bool)), this, SLOT(onActionManuals(bool)));
 	connect(ui.actionCheckUpdate, SIGNAL(triggered(bool)), this, SLOT(onActionCheckUpdate(bool)));
 	connect(ui.actionCoderKit, SIGNAL(triggered(bool)), this, SLOT(onActionCoderKit(bool)));
 	connect(ui.actionScanner, SIGNAL(triggered(bool)), this, SLOT(onActionScanner(bool)));
 	connect(ui.actionBundler, SIGNAL(triggered(bool)), this, SLOT(onActionBundler(bool)));
 
 	cmds_ = new Cmds(ui.cmdOutWindow);
+	cmds_->hide();
+	cmds_->setParent(ui.cmdOutWindow);
 	ui.cmdInput->installEventFilter(this);
 	ui.cmdOutWindow->installEventFilter(this);
 	ui.cmdOutWindow->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -119,7 +151,8 @@ OpenArk::OpenArk(QWidget *parent) :
 	CreateTabPage(new Scanner(this), ui.tabScanner);
 	CreateTabPage(new CoderKit(this), ui.tabCoderKit);
 	CreateTabPage(new Bundler(this), ui.tabBundler);
-	ActivateTab(0);
+	CreateTabPage(new Kernel(this), ui.tabKernel);
+	ActivateTab(TAB_PROCESS);
 
 	chkupt_timer_ = new QTimer();
 	chkupt_timer_->setInterval(5000);
@@ -128,6 +161,8 @@ OpenArk::OpenArk(QWidget *parent) :
 		onActionCheckUpdate(false);
 		chkupt_timer_->stop();
 	});
+
+	connect(OpenArkLanguage::Instance(), &OpenArkLanguage::languageChaned, this, [this]() {ui.retranslateUi(this); });
 }
 
 bool OpenArk::eventFilter(QObject *obj, QEvent *e)
@@ -186,22 +221,23 @@ void OpenArk::onActionReset(bool checked)
 void OpenArk::onActionOnTop(bool checked)
 {
 	HWND wnd = (HWND)winId();
-	DWORD style = ::GetWindowLong(wnd, GWL_EXSTYLE);
-	QAction* sender = qobject_cast<QAction*>(QObject::sender());
-	if (sender->isChecked()) {
-		style |= WS_EX_TOPMOST;
-		::SetWindowLong(wnd, GWL_EXSTYLE, style);
-		::SetWindowPos(wnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOREPOSITION | SWP_NOSIZE | SWP_SHOWWINDOW);
+	if (checked) {
+		SetWindowOnTop(wnd, true);
 	}	else {
-		style &= ~WS_EX_TOPMOST;
-		::SetWindowLong(wnd, GWL_EXSTYLE, style);
-		::SetWindowPos(wnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOREPOSITION | SWP_NOSIZE | SWP_SHOWWINDOW);
+		SetWindowOnTop(wnd, false);
 	}
 }
 
 void OpenArk::onActionAbout(bool checked)
 {
 	auto about = new About(this);
+	about->raise();
+	about->show();
+}
+
+void OpenArk::onActionSettings(bool checked)
+{
+	auto about = new Settings(this);
 	about->raise();
 	about->show();
 }
@@ -217,9 +253,43 @@ void OpenArk::onActionConsole(bool checked)
 	}
 }
 
+void OpenArk::onActionPtool(bool checked)
+{
+	QAction* sender = qobject_cast<QAction*>(QObject::sender());
+	if (!sender->isChecked()) {
+		emit signalShowPtool(-1);
+		return;
+	}
+	if (sender == ui.actionModule) {
+		emit signalShowPtool(0);
+		ui.actionHandle->setChecked(false);
+		ui.actionMemory->setChecked(false);
+		return;
+	}
+
+	if (sender == ui.actionHandle) {
+		emit signalShowPtool(1);
+		ui.actionModule->setChecked(false);
+		ui.actionMemory->setChecked(false);
+		return;
+	}
+
+	if (sender == ui.actionMemory) {
+		emit signalShowPtool(2);
+		ui.actionModule->setChecked(false);
+		ui.actionHandle->setChecked(false);
+		return;
+	}
+}
+
+void OpenArk::onActionManuals(bool checked)
+{
+	OpenBrowserUrl("https://openark.blackint3.com/manuals/");
+}
+
 void OpenArk::onActionGithub(bool checked)
 {
-	OpenBrowserUrl("https://github.com/BlackINT3/OpenArk");
+	OpenBrowserUrl("https://github.com/BlackINT3/OpenArk/");
 }
 
 void OpenArk::onActionCheckUpdate(bool checked)
@@ -258,7 +328,7 @@ void OpenArk::onActionCheckUpdate(bool checked)
 			return;
 		}
 		auto local_ver = AppVersion();
-		auto local_bd = AppBdTime();
+		auto local_bd = AppBuildTime();
 		INFO(L"local appver:%s, build:%s", local_ver.toStdWString().c_str(), local_bd.toStdWString().c_str());
 		if (local_ver.isEmpty() || local_bd.isEmpty()) {
 			return;
@@ -281,19 +351,41 @@ void OpenArk::onActionCheckUpdate(bool checked)
 	});
 }
 
+void OpenArk::onActionLanguage(QAction *act)
+{
+	auto lang = OpenArkLanguage::Instance()->GetLanguage();
+	auto text = act->text();
+	if (act == ui.actionEnglish) {
+		if (lang == 0) return;
+		lang = 0;
+	} else if (act == ui.actionZhcn) {
+		if (lang == 1) return;
+		lang = 1;
+	}	else {
+		return; 
+	}
+	QString tips = tr("Language changed ok, did you restart application now?");
+	ConfOpLang(CONF_SET, lang);
+	QMessageBox::StandardButton reply;
+	reply = QMessageBox::information(this, tr("Information"), tips, QMessageBox::Yes | QMessageBox::No);
+	if (reply == QMessageBox::Yes) {
+		onExecCmd(L".restart");
+	}
+}
+
 void OpenArk::onActionCoderKit(bool checked)
 {
-	ActivateTab(1);
+	ActivateTab(TAB_CODERKIT);
 }
 
 void OpenArk::onActionScanner(bool checked)
 {
-	ActivateTab(2);
+	ActivateTab(TAB_SCANNER);
 }
 
 void OpenArk::onActionBundler(bool checked)
 {
-	ActivateTab(3);
+	ActivateTab(TAB_BUNDLER);
 }
 
 void OpenArk::onLogOutput(QString log)
@@ -324,10 +416,17 @@ void OpenArk::onCmdHelp()
 void OpenArk::onShowConsoleMenu(const QPoint &pt)
 {
 	QMenu *menu = ui.cmdOutWindow->createStandardContextMenu();
+	menu->addSeparator();
+	menu->addAction(tr("History"), this, SLOT(onConsoleHistory()));
 	menu->addAction(tr("Helps"), this, SLOT(onConsoleHelps()));
 	menu->addAction(tr("Clear"), this, SLOT(onConsoleClear()));
 	menu->exec(ui.cmdOutWindow->mapToGlobal(pt));
 	delete menu;
+}
+
+void OpenArk::onConsoleHistory()
+{
+	onExecCmd(L".history");
 }
 
 void OpenArk::onConsoleClear()

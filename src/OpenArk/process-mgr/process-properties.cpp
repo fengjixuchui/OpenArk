@@ -15,6 +15,7 @@
 ****************************************************************************/
 #include "process-properties.h"
 #include "../common/common.h"
+#include "../common/cache/cache.h"
 
 ProcessProperties::ProcessProperties(QWidget* parent, DWORD pid, int tab) :
 	pid_(pid)
@@ -23,11 +24,12 @@ ProcessProperties::ProcessProperties(QWidget* parent, DWORD pid, int tab) :
 	setAttribute(Qt::WA_DeleteOnClose);
 	setWindowFlags(windowFlags()& ~Qt::WindowMaximizeButtonHint);
 	ui.setupUi(this);
+	connect(OpenArkLanguage::Instance(), &OpenArkLanguage::languageChaned, this, [this]() {ui.retranslateUi(this); });
 
 	std::wstring wstr = UNONE::PsGetProcessPathW(pid_);
 	proc_path_ = WStrToQ(wstr);
 	proc_name_ = WStrToQ(UNONE::FsPathToNameW(wstr));
-	QString title = QString("%1:%2 Properties").arg(proc_name_).arg(pid_);
+	QString title = QString(tr("%1:%2 Properties")).arg(proc_name_).arg(pid_);
 	setWindowTitle(title);
 	setWindowIcon(LoadIcon(proc_path_));
 
@@ -38,7 +40,7 @@ ProcessProperties::ProcessProperties(QWidget* parent, DWORD pid, int tab) :
 	SetDefaultTreeViewStyle(ui.threadView, threads_model_);
 	SetDefaultTreeViewStyle(ui.wndsView, wnds_model_);
 	menu_ = new QMenu();
-	menu_->addAction(WCharsToQ(L"Refresh"), this, SLOT(onRefresh()));
+	menu_->addAction(tr("Refresh"), this, SLOT(onRefresh()));
 	ui.threadView->installEventFilter(this);
 	ui.wndsView->installEventFilter(this);
 
@@ -136,8 +138,7 @@ void ProcessProperties::ShowImageDetail()
 		ui.buildLabel->setText(StrToQ(cptime));
 		UNONE::PeUnmapImage(image);
 	}
-	UNONE::PROCESS_BASE_INFOW info;
-	UNONE::PsGetProcessInfoW(pid_, info);
+	auto info = CacheGetProcessBaseInfo(pid_);
 	ui.cmdlineEdit->setText(WStrToQ(info.CommandLine));
 	ui.curdirEdit->setText(WStrToQ(info.CurrentDirectory));
 	auto ppid = UNONE::PsGetParentPid(pid_);
