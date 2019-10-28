@@ -60,3 +60,27 @@ int ConfOpLang(ConfOp op, int &lang)
 
 	return -1;
 }
+
+QStringList ConfGetJunksDir()
+{
+	QStringList dirs;
+
+	std::vector<std::wstring> junkdirs;
+	// Temp
+	junkdirs.push_back(UNONE::OsEnvironmentW(L"%Temp%"));
+	junkdirs.push_back(UNONE::OsEnvironmentW(L"%windir%\\Temp"));
+
+	// Recent
+	auto appdata = UNONE::OsEnvironmentW(L"%AppData%");
+	auto localappdata = UNONE::OsEnvironmentW(L"%LocalAppData%");
+	junkdirs.push_back(appdata + L"\\Microsoft\\Windows\\Recent");
+	junkdirs.push_back(appdata + L"\\Microsoft\\Office\\Recent");
+
+	// Chrome
+	junkdirs.push_back(localappdata + L"\\Google\\Chrome\\User Data\\Default\\Cache");
+	junkdirs.push_back(localappdata + L"\\Google\\Chrome\\User Data\\Default\\Code Cache");
+
+	// junkdirs.push_back(L"C:\\AppData\\Roaming");
+
+	return WVectorToQList(junkdirs);
+}

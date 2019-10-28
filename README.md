@@ -13,7 +13,7 @@
 
 * OpenArk is a open source anti-rookit(Ark) tool on Windows. Ark is Anti Rootkit abbreviated, it aimmed at reversing and programming helper, users also can use it to find out malwares in the OS. More and more commands will be supported in future.
 
-![image](doc/resources/snapshot-en-v102.png)
+![image](doc/resources/snapshot-en-01.png)
 
 ### Features
 * Process - Process/Thread/Module/Handles/Memory/Window... information view, Dll Injector x86/x64.
@@ -22,6 +22,7 @@
 * Scanner - PE file parsers, evolved to virus analyzer in future.
 * Bundler - Directory and files could be bundled to one executable file, it also support scripts.
 * Commands - Many useful coammands in there.
+* Utilities - Cleaner、System tools and more.
 * Language - support English and Chinese now, more languages in future.
 * More features in developing...
 
