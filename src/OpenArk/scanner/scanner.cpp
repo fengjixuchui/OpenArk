@@ -30,6 +30,7 @@ Scanner::Scanner(QWidget *parent) :
 
 	ui.tabWidget->setTabPosition(QTabWidget::West);
 	ui.tabWidget->tabBar()->setStyle(new OpenArkTabStyle);
+	connect(ui.tabWidget, SIGNAL(currentChanged(int)), this, SLOT(onTabChanged(int)));
 	setAcceptDrops(true);
 
 	sumup_model_ = new QStandardItemModel;
@@ -332,6 +333,11 @@ __raw:
 	}
 }
 
+void Scanner::onTabChanged(int index)
+{
+	OpenArkConfig::Instance()->SetPrefLevel2Tab(index);
+}
+
 void Scanner::onOpenFile(const QString& file)
 {
 	if (file.isEmpty()) {
@@ -415,7 +421,7 @@ void Scanner::RefreshSummary(const std::wstring& path)
 	DWORD64 size;
 	UNONE::FsGetFileSizeW(path, (DWORD64&)size);
 	kbytes = size / 1024;
-	mbytes = size / 1024 / 1024;
+	mbytes = kbytes / 1024;
 	std::wstring formed = UNONE::StrFormatW(L"%.2f MB | %.2f KB | %d B", mbytes, kbytes, size);
 
 	auto AddSummaryUpItem = [&](QString name, QString value) {
@@ -752,8 +758,14 @@ void Scanner::RefreshExport()
 
 	PIMAGE_DATA_DIRECTORY dir = UNONE::PeGetDataDirectory(IMAGE_DIRECTORY_ENTRY_EXPORT, pe_image_);
 	PDWORD addr_names = (PDWORD)(exp->AddressOfNames + pe_image_);
+	if (!UNONE::PeRegionValid(pe_image_, addr_names))
+		return;
 	PDWORD addr_funcs = (PDWORD)(exp->AddressOfFunctions + pe_image_);
+	if (!UNONE::PeRegionValid(pe_image_, addr_funcs))
+		return;
 	PWORD addr_ordinals = (PWORD)(exp->AddressOfNameOrdinals + pe_image_);
+	if (!UNONE::PeRegionValid(pe_image_, addr_ordinals))
+		return;
 	DWORD cnt_names = exp->NumberOfNames;
 	DWORD cnt_ordinals = exp->NumberOfFunctions;
 	DWORD base_ordinal = exp->Base;

@@ -108,7 +108,7 @@ Cmds::Cmds(QTextBrowser *parent) :
 			item.example.append(tail);
 	}
 
-	auto path = ConfigGetConsole("History.FilePath").toStdWString();
+	auto path = OpenArkConfig::Instance()->GetConsole("History.FilePath").toStdWString();
 	std::string history;
 	std::vector<std::string> vec;
 	UNONE::FsReadFileDataW(path, history);
@@ -127,7 +127,7 @@ Cmds::~Cmds()
 		history.append(h.toStdString());
 		history.append("\r\n");
 	}
-	auto path = ConfigGetConsole("History.FilePath").toStdWString();
+	auto path = OpenArkConfig::Instance()->GetConsole("History.FilePath").toStdWString();
 	UNONE::FsWriteFileDataW(path, history);
 }
 
@@ -818,8 +818,6 @@ void Cmds::CmdOutput(const wchar_t* format, ...)
 	std::wstring &&wstr = UNONE::StrFormatVaListW(format, lst);
 	log = QString().fromStdWString(wstr);
 	va_end(lst);
-	log.append("\n");
-	log.replace("\n", "<br/>");
 	log.replace("ERROR", "<font color=red>ERROR</font>");
 	log.replace("err", "<font color=red>err</font>");
 	log.replace("failed", "<font color=red>failed</font>");
@@ -827,6 +825,9 @@ void Cmds::CmdOutput(const wchar_t* format, ...)
 	log.replace("warning", "<font color=red>warning</font>");
 	log.replace("WRAN", "<font color=red>WRAN</font>");
 	log.replace("FATAL", "<font color=red>FATAL</font>");
+	log = QString("<font color=#E0E2E4>%1</font>").arg(log);
+	log.append("\n");
+	log.replace("\n", "<br/>");
 	cmd_window_->append(log);
 }
 
@@ -837,10 +838,10 @@ void Cmds::CmdDispatcher(const std::wstring &cmdline)
 	std::wstring wstr = UNONE::StrTrimW(cmdline);
 	
 	//if (!cmd_window_->toPlainText().isEmpty()) CmdOutput(LR"(<hr>)");
-	CmdOutput(LR"(<b><font color="black">C:\>%s</font></b>)", cmdline.c_str());
+	CmdOutput(LR"(<b><font color=#8ccf34>C:\>%s</color></b>)", cmdline.c_str());
 
 	if (cmd_history_.empty() || QString::compare(WStrToQ(wstr), cmd_history_.back(), Qt::CaseInsensitive)!=0) {
-		auto cnt = ConfigGetConsole("History.MaxRecords").toInt();
+		auto cnt = OpenArkConfig::Instance()->GetConsole("History.MaxRecords").toInt();
 		if (cmd_history_.size() >= cnt) {
 			cmd_history_.pop_front();
 		}

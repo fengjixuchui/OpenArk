@@ -31,6 +31,10 @@ public:
 	Kernel(QWidget *parent);
 	~Kernel();
 
+public:
+	Q_INVOKABLE int GetActiveTab() { return ui.tabWidget->currentIndex(); };
+	Q_INVOKABLE void SetActiveTab(int idx) { ui.tabWidget->setCurrentIndex(idx); };
+
 protected:
 	bool eventFilter(QObject *obj, QEvent *e);
 	void dragEnterEvent(QDragEnterEvent *event);

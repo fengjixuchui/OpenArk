@@ -51,6 +51,7 @@ protected:
 public:
 	QList<JunkCluster> junks_cluster_;
 	bool is_custom_scan_ = false;
+	bool is_builtin_scan_ = false;
 	QStringList custom_path_;
 	QString custom_suffex_;
 };
@@ -74,7 +75,13 @@ public:
 	Utilities(QWidget *parent);
 	~Utilities();
 
+public:
+	Q_INVOKABLE int GetActiveTab() { return ui.tabWidget->currentIndex(); };
+	Q_INVOKABLE void SetActiveTab(int idx) { ui.tabWidget->setCurrentIndex(idx); };
+	void RecordAppServer(const QString &svr);
+
 private slots:
+	void onTabChanged(int index);
 	void onOpJunkfiles(int, JunkCluster);
 	void onAppendJunkfiles(JunkCluster);
 	void onCleanJunkfiles(JunkCluster);
@@ -86,6 +93,7 @@ private:
 	QVector<int> removed_rows_;
 
 private:
+	QString app_server_;
 	QStandardItemModel *junks_model_;
 	JunksSortFilterProxyModel *proxy_junks_;
 	ScanJunksThread *scanjunks_thread_;

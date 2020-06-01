@@ -545,3 +545,55 @@ bool ReadStdout(const std::wstring& cmdline, std::wstring& output, DWORD& exitco
 	return result;
 }
 
+typedef enum _SHUTDOWN_ACTION {
+	ShutdownNoReboot,
+	ShutdownReboot,
+	ShutdownPowerOff
+} SHUTDOWN_ACTION;
+typedef NTSTATUS(NTAPI *__NtShutdownSystem)(
+	__in SHUTDOWN_ACTION Action
+	);
+bool OsFastReboot()
+{
+	NTSTATUS status;
+	__NtShutdownSystem shutdown_api = (__NtShutdownSystem)
+		GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtShutdownSystem");
+	if (shutdown_api == NULL) {
+		return false;
+	}
+	UNONE::SeEnablePrivilege(SE_SHUTDOWN_NAME);
+	status = shutdown_api(ShutdownReboot);
+	if (!NT_SUCCESS(status)) {
+		return false;
+	}
+	return true;
+}
+bool OsFastPoweroff()
+{
+	NTSTATUS status;
+	__NtShutdownSystem shutdown_api = (__NtShutdownSystem)
+		GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtShutdownSystem");
+	if (shutdown_api == NULL) {
+		return false;
+	}
+	UNONE::SeEnablePrivilege(SE_SHUTDOWN_NAME);
+	status = shutdown_api(ShutdownPowerOff);
+	if (!NT_SUCCESS(status)) {
+		return false;
+	}
+	return true;
+}
+#define INVALID_PID -1
+DWORD PsGetPidByWindowW(wchar_t *cls, wchar_t *title)
+{
+	DWORD pid = INVALID_PID;
+	HWND wnd = FindWindowW(cls, title);
+	if (wnd != NULL) {
+		GetWindowThreadProcessId(wnd, &pid);
+	}
+	return pid;
+}
+DWORD OsGetExplorerPid()
+{
+	return PsGetPidByWindowW(L"Progman", L"Program Manager");
+}

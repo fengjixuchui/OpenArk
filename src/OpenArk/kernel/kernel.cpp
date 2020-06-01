@@ -150,6 +150,7 @@ void Kernel::onTabChanged(int index)
 	default:
 		break;
 	}
+	OpenArkConfig::Instance()->SetPrefLevel2Tab(index);
 }
 
 void Kernel::onSignDriver()
@@ -225,8 +226,10 @@ void Kernel::InitKernelEntryView()
 	GetPerformanceInfo(&perf, sizeof(perf));
 	double gb = round((double)(perf.PhysicalTotal*perf.PageSize) / 1024 / 1024 / 1024);
 
-	AddSummaryUpItem(tr("MajorVersion"), DWordToDecQ(UNONE::OsMajorVer()));
+	auto major = UNONE::OsMajorVer();
+	AddSummaryUpItem(tr("MajorVersion"), DWordToDecQ(major));
 	AddSummaryUpItem(tr("MiniorVersion"), DWordToDecQ(UNONE::OsMinorVer()));
+	if (major >= 10) AddSummaryUpItem(tr("ReleaseNumber"), DWordToDecQ(UNONE::OsReleaseNumber()));
 	AddSummaryUpItem(tr("BuildNumber"), DWordToDecQ(UNONE::OsBuildNumber()));
 	AddSummaryUpItem(tr("MajorServicePack"), DWordToDecQ(info.wServicePackMajor));
 	AddSummaryUpItem(tr("MiniorServicePack"), DWordToDecQ(info.wServicePackMinor));
@@ -314,7 +317,7 @@ void Kernel::InitDriversView()
 		ClipboardCopyData(DriversItemData(GetCurViewColumn(ui.driverView)).toStdString());
 	});
 	drivers_menu_->addAction(tr("Sendto Scanner"), this, [&] {
-		parent_->ActivateTab(TAB_SCANNER);
+		parent_->SetActiveTab(TAB_SCANNER);
 		emit signalOpen(DriversItemData(DRV.path));
 	});
 	drivers_menu_->addAction(tr("Explore File"), this, [&] {
@@ -391,7 +394,7 @@ void Kernel::InitNotifyView()
 		ClipboardCopyData(NotifyItemData(GetCurViewColumn(ui.driverView)).toStdString());
 	});
 	notify_menu_->addAction(tr("Sendto Scanner"), this, [&] {
-		parent_->ActivateTab(TAB_SCANNER);
+		parent_->SetActiveTab(TAB_SCANNER);
 		emit signalOpen(NotifyItemData(NOTIFY.path));
 	});
 	notify_menu_->addAction(tr("Explore File"), this, [&] {

@@ -35,7 +35,12 @@ public:
 	CoderKit(QWidget* parent);
 	~CoderKit();
 
+public:
+	Q_INVOKABLE int GetActiveTab() { return ui.tabWidget->currentIndex(); };
+	Q_INVOKABLE void SetActiveTab(int idx) { ui.tabWidget->setCurrentIndex(idx); };
+
 private slots:
+	void onTabChanged(int index);
 	void onCodeTextChanged();
 	void onCodeTextChanged(const QString &text);
 	void onWindowsErrorTextChanged(const QString &text);

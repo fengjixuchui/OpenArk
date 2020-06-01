@@ -24,6 +24,8 @@ class Cmds;
 #define TAB_CODERKIT 2
 #define TAB_SCANNER 3
 #define TAB_BUNDLER 4
+#define TAB_UTILITIES 5
+#define TAB_REVERSE 6
 
 class OpenArk : public QMainWindow {
 	Q_OBJECT
@@ -64,12 +66,12 @@ private slots:
 	void onConsoleHelps();
 	void onConsoleHistory();
 	void onCmdInput();
-	void onTabChanged();
+	void onTabChanged(int);
 
 public:
 	void StatusBarClear();
 	void StatusBarAdd(QWidget *label);
-	void ActivateTab(int idx);
+	void SetActiveTab(int idx);
 
 private:
 	Cmds *cmds_;

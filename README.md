@@ -6,14 +6,15 @@
 * Website: https://openark.blackint3.com/
 * Source: https://github.com/BlackINT3/OpenArk/
 * Manuals: https://openark.blackint3.com/manuals/
-* QQ Qun: 836208099
+* QQ Group: 836208099
 
 ### Introduction
 * [中文说明](https://github.com/BlackINT3/OpenArk/blob/master/doc/README-zh.md)
 
 * OpenArk is a open source anti-rookit(Ark) tool on Windows. Ark is Anti Rootkit abbreviated, it aimmed at reversing and programming helper, users also can use it to find out malwares in the OS. More and more commands will be supported in future.
 
-![image](doc/resources/snapshot-en-01.png)
+![image](doc/resources/snapshot-en-v106-01.png)
+![image](doc/resources/snapshot-en-v106.png)
 
 ### Features
 * Process - Process/Thread/Module/Handles/Memory/Window... information view, Dll Injector x86/x64.
@@ -45,7 +46,3 @@
 
 ### Contributing
   * Issues and Push request is welcome.
-
-  * QQ Qun: 836208099
-
-  ![](doc/resources/qq-qun.png)

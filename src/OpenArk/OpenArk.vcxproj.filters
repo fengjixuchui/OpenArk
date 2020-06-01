@@ -108,6 +108,15 @@
     <Filter Include="utilities">
       <UniqueIdentifier>{8ea4c836-5d7b-4572-a5fe-d0910ff6b9c2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="reverse">
+      <UniqueIdentifier>{7bf7941e-b8b8-4915-83e2-acb7019b3697}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common\utils\compress">
+      <UniqueIdentifier>{d891b85d-c413-47df-9f0a-096555a8e4ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common\utils\compress\xzip">
+      <UniqueIdentifier>{fd40b3a5-37fd-4c06-acf2-2821a176b7aa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="openark\openark.cpp">
@@ -222,6 +231,18 @@
     <ClCompile Include="utilities\utilities.cpp">
       <Filter>utilities</Filter>
     </ClCompile>
+    <ClCompile Include="reverse\reverse.cpp">
+      <Filter>reverse</Filter>
+    </ClCompile>
+    <ClCompile Include="common\utils\compress\zip_utils.cpp">
+      <Filter>common\utils\compress</Filter>
+    </ClCompile>
+    <ClCompile Include="common\utils\compress\xzip\XUnzip.cpp">
+      <Filter>common\utils\compress\xzip</Filter>
+    </ClCompile>
+    <ClCompile Include="common\utils\compress\xzip\XZip.cpp">
+      <Filter>common\utils\compress\xzip</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="openark\openark.h">
@@ -263,6 +284,9 @@
     <QtMoc Include="utilities\utilities.h">
       <Filter>utilities</Filter>
     </QtMoc>
+    <QtMoc Include="reverse\reverse.h">
+      <Filter>reverse</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="ui\process-mgr.ui">
@@ -296,6 +320,9 @@
       <Filter>ui</Filter>
     </QtUic>
     <QtUic Include="ui\utilities.ui">
+      <Filter>ui</Filter>
+    </QtUic>
+    <QtUic Include="ui\reverse.ui">
       <Filter>ui</Filter>
     </QtUic>
   </ItemGroup>
@@ -407,6 +434,18 @@
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_utilities.h">
       <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_reverse.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="common\utils\compress\zip_utils.h">
+      <Filter>common\utils\compress</Filter>
+    </ClInclude>
+    <ClInclude Include="common\utils\compress\xzip\XUnzip.h">
+      <Filter>common\utils\compress\xzip</Filter>
+    </ClInclude>
+    <ClInclude Include="common\utils\compress\xzip\XZip.h">
+      <Filter>common\utils\compress\xzip</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

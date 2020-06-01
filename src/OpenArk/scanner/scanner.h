@@ -36,10 +36,15 @@ public:
 	Scanner(QWidget *parent);
 	~Scanner();
 
+public:
+	Q_INVOKABLE int GetActiveTab() { return ui.tabWidget->currentIndex(); };
+	Q_INVOKABLE void SetActiveTab(int idx) { ui.tabWidget->setCurrentIndex(idx); };
+
 protected:
 	bool eventFilter(QObject *obj, QEvent *e);
 
 public slots:
+	void onTabChanged(int index);
 	void onOpenFile(const QString& file);
 	void onRefresh();
 
