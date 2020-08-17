@@ -35,20 +35,18 @@ bool JunksSortFilterProxyModel::lessThan(const QModelIndex &left, const QModelIn
 	return QString::compare(s1.toString(), s2.toString(), Qt::CaseInsensitive) < 0;
 }
 
-Utilities::Utilities(QWidget *parent) :
+Utilities::Utilities(QWidget *parent, int tabid) :
 	parent_((OpenArk*)parent),
 	scanjunks_thread_(nullptr),
 	cleanjunks_thread_(nullptr)
 {
 	ui.setupUi(this);
-	ui.tabWidget->setTabPosition(QTabWidget::West);
-	ui.tabWidget->tabBar()->setStyle(new OpenArkTabStyle);
-	connect(ui.tabWidget, SIGNAL(currentChanged(int)), this, SLOT(onTabChanged(int)));
-
 	qRegisterMetaType<JunkCluster>("JunkCluster");
 
 	InitCleanerView();
 	InitSystemToolsView();
+
+	CommonMainTabObject::Init(ui.tabWidget, tabid);
 }
 
 Utilities::~Utilities()
@@ -64,7 +62,7 @@ void Utilities::RecordAppServer(const QString &svr)
 
 void Utilities::onTabChanged(int index)
 {
-	OpenArkConfig::Instance()->SetPrefLevel2Tab(index);
+	CommonMainTabObject::onTabChanged(index);
 }
 
 void Utilities::onOpJunkfiles(int op, JunkCluster cluster)
@@ -358,7 +356,7 @@ void Utilities::InitCleanerView()
 bool PsKillProcess(__in DWORD pid)
 {
 	bool result = false;
-	HANDLE phd = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
+	HANDLE phd = OpenProcessWrapper(PROCESS_TERMINATE, FALSE, pid);
 	if (phd) {
 		if (TerminateProcess(phd, 1))
 			result = true;
@@ -382,13 +380,13 @@ void Utilities::InitSystemToolsView()
 	connect(ui.fastrebootBtn, &QPushButton::clicked, [&] {
 		if (QMessageBox::warning(this, tr("Warning"), tr("Are you sure to reboot?"), 
 			QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
-			OsFastReboot();
+			UNONE::OsFastReboot();
 		}
 	});
 	connect(ui.fastpoweroffBtn, &QPushButton::clicked, [&] {
 		if (QMessageBox::warning(this, tr("Warning"), tr("Are you sure to poweroff?"),
 			QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
-			OsFastPoweroff();
+			UNONE::OsFastPoweroff();
 		}
 	});
 	connect(ui.resetexplorerBtn, &QPushButton::clicked, [&] {

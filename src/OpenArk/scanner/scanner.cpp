@@ -21,16 +21,13 @@
 #define PE_FILE32 L"PE 32-bit"
 #define PE_FILE64 L"PE 64-bit"
 
-Scanner::Scanner(QWidget *parent) :
+Scanner::Scanner(QWidget *parent, int tabid) :
 	pe_image_(NULL),
 	parent_((OpenArk*)parent)
 {
 	ui.setupUi(this);
 	connect(OpenArkLanguage::Instance(), &OpenArkLanguage::languageChaned, this, [this]() {ui.retranslateUi(this); });
 
-	ui.tabWidget->setTabPosition(QTabWidget::West);
-	ui.tabWidget->tabBar()->setStyle(new OpenArkTabStyle);
-	connect(ui.tabWidget, SIGNAL(currentChanged(int)), this, SLOT(onTabChanged(int)));
 	setAcceptDrops(true);
 
 	sumup_model_ = new QStandardItemModel;
@@ -51,7 +48,7 @@ Scanner::Scanner(QWidget *parent) :
 	ui.headersView->viewport()->installEventFilter(this);
 	ui.headersView->installEventFilter(this);
 	headers_menu_ = new QMenu();
-	headers_menu_->addAction(WCharsToQ(L"ExpandAll"), this, SLOT(onExpandAll()));
+	headers_menu_->addAction(tr("ExpandAll"), this, SLOT(onExpandAll()));
 
 	sections_model_ = new QStandardItemModel;
 	SetDefaultTableViewStyle(ui.sectionsView, sections_model_);
@@ -90,6 +87,8 @@ Scanner::Scanner(QWidget *parent) :
 	connect(ui.revaEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onTextChanged(const QString&)));
 	connect(ui.rvaEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onTextChanged(const QString&)));
 	connect(ui.rawEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onTextChanged(const QString&)));
+
+	CommonMainTabObject::Init(ui.tabWidget, tabid);
 }
 
 Scanner::~Scanner()
@@ -271,6 +270,7 @@ void Scanner::onTextChanged(const QString& text)
 			UNONE::StrReplaceA(input, "0x");
 			UNONE::StrReplaceA(input, "h");
 			UNONE::StrReplaceA(input, "\\x");
+			UNONE::StrReplaceA(input, "`");
 			input = UNONE::StrTrimLeftA(input, "0");
 			UNONE::StrUpperA(input);
 			sender->setText(StrToQ(input));
@@ -335,7 +335,7 @@ __raw:
 
 void Scanner::onTabChanged(int index)
 {
-	OpenArkConfig::Instance()->SetPrefLevel2Tab(index);
+	CommonMainTabObject::onTabChanged(index);
 }
 
 void Scanner::onOpenFile(const QString& file)

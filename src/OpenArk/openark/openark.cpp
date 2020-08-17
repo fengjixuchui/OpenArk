@@ -62,6 +62,10 @@ OpenArk::OpenArk(QWidget *parent) :
 	OpenArkConfig::Instance()->GetMainGeometry(x, y, w, h);
 	move(x, y);
 	resize(w, h);
+	bool maxed = false;
+	OpenArkConfig::Instance()->GetMainMaxed(maxed);
+	if (maxed) showMaximized();
+
 	ui.splitter->setStretchFactor(0, 1);
 	ui.splitter->setStretchFactor(1, 5);
 	QString title = QString(tr("OpenArk v%1 ").arg(AppVersion()));
@@ -146,10 +150,12 @@ OpenArk::OpenArk(QWidget *parent) :
 	connect(ui.tabWidget, SIGNAL(currentChanged(int)), this, SLOT(onTabChanged(int)));
 	connect(ui.cmdOutWindow, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onShowConsoleMenu(const QPoint &)));
 
-	int main_idx = 0;
-	int level2_idx = 0;
+	int main_idx = 1;
+	QVector<int> level2_idx;
+	QVector<QVector<int>> idxs;
 	OpenArkConfig::Instance()->GetPrefMainTab(main_idx);
-	OpenArkConfig::Instance()->GetPrefLevel2Tab(level2_idx);
+	OpenArkConfig::Instance()->GetMainTabAllMap(idxs);
+
 	auto CreateTabPage = [&](QWidget *widget, QWidget *origin) {
 		int idx = ui.tabWidget->indexOf(origin);
 		QString text = ui.tabWidget->tabText(idx);
@@ -160,30 +166,33 @@ OpenArk::OpenArk(QWidget *parent) :
 	auto processmgr = new ProcessMgr(this);
 	CreateTabPage(processmgr, ui.tabProcessMgr);
 
-	auto scanner = new Scanner(this);
+	auto scanner = new Scanner(this, TAB_SCANNER);
 	CreateTabPage(scanner, ui.tabScanner);
 	
-	auto coderkit = new CoderKit(this);
+	auto coderkit = new CoderKit(this, TAB_CODERKIT);
 	CreateTabPage(coderkit, ui.tabCoderKit);
 
 	auto bundler = new Bundler(this);
 	CreateTabPage(bundler, ui.tabBundler);
 	
-	auto kernel = new Kernel(this);
+	auto kernel = new Kernel(this, TAB_KERNEL);
 	CreateTabPage(kernel, ui.tabKernel);
 
-	auto utilities = new Utilities(this);
+	auto utilities = new Utilities(this, TAB_UTILITIES);
 	CreateTabPage(utilities, ui.tabUtilities);
 
-	auto reverse = new Reverse(this);
+	auto reverse = new Reverse(this, TAB_REVERSE);
 	CreateTabPage(reverse, ui.tabReverse);
 
-	switch (main_idx) {
-	case TAB_KERNEL: kernel->SetActiveTab(level2_idx); break;
-	case TAB_CODERKIT: coderkit->SetActiveTab(level2_idx); break;
-	case TAB_SCANNER: scanner->SetActiveTab(level2_idx); break;
-	case TAB_UTILITIES: utilities->SetActiveTab(level2_idx); break;
-	case TAB_REVERSE: reverse->SetActiveTab(level2_idx); break;
+	for (int tab = 0; tab < TAB_MAX; tab++) {
+		level2_idx = idxs[tab];
+		switch (tab) {
+		case TAB_KERNEL: kernel->SetActiveTab(level2_idx); break;
+		case TAB_CODERKIT: coderkit->SetActiveTab(level2_idx); break;
+		case TAB_SCANNER: scanner->SetActiveTab(level2_idx); break;
+		case TAB_UTILITIES: utilities->SetActiveTab(level2_idx); break;
+		case TAB_REVERSE: reverse->SetActiveTab(level2_idx); break;
+		}
 	}
 
 	SetActiveTab(main_idx);
@@ -231,10 +240,12 @@ bool OpenArk::eventFilter(QObject *obj, QEvent *e)
 	} else if (obj == this) {
 		if (e->type() == QEvent::Resize) {
 			auto evt = dynamic_cast<QResizeEvent*>(e);
+			old_window_size_ = evt->oldSize();
 			OpenArkConfig::Instance()->SetMainGeometry(-1, -1, evt->size().width(), evt->size().height());
 		} else if (e->type() == QEvent::Move) {
 			auto evt = dynamic_cast<QMoveEvent*>(e);
-			OpenArkConfig::Instance()->SetMainGeometry(evt->pos().x()-8, evt->pos().y()-31, -1, -1);
+			old_window_pos_ = evt->oldPos();
+			OpenArkConfig::Instance()->SetMainGeometry(evt->pos().x() - 8, evt->pos().y() - 31, -1, -1);
 		}
 	}
 	
@@ -245,6 +256,18 @@ bool OpenArk::eventFilter(QObject *obj, QEvent *e)
 		return true;
 	}
 	return QWidget::eventFilter(obj, e);
+}
+
+void OpenArk::changeEvent(QEvent *e)
+{
+	if (e->type() != QEvent::WindowStateChange) return;
+	if (windowState() == Qt::WindowMaximized) {
+		OpenArkConfig::Instance()->SetMainGeometry(old_window_pos_.x(), old_window_pos_.y(), 
+			old_window_size_.width(), old_window_size_.height());
+		OpenArkConfig::Instance()->SetMainMaxed(true);
+	} else if (windowState() != Qt::WindowMinimized) {
+		OpenArkConfig::Instance()->SetMainMaxed(false);
+	}
 }
 
 void OpenArk::onActionOpen(bool checked)
@@ -446,6 +469,7 @@ void OpenArk::onLogOutput(QString log)
 	log.replace("error", "<font color=red>error</font>");
 	log.replace("ERR", "<font color=red>ERR</font>");
 	log.replace("ERROR", "<font color=red>ERROR</font>");
+	log = QString("<font color=#E0E2E4>%1</font>").arg(log);
 	ui.cmdOutWindow->append(log);
 }
 
@@ -513,6 +537,7 @@ void OpenArk::onTabChanged(int idx)
 	case TAB_UTILITIES:
 	case TAB_REVERSE:
 		auto obj = ui.tabWidget->currentWidget();
+		auto xxx = obj->objectName();
 		if (obj->objectName().contains("tab")) break;
 		qint32 l2;
 		qRegisterMetaType<qint32>("qint32");

@@ -111,9 +111,27 @@ void OpenArkLanguage::ChangeLanguage(int lang)
 
 QIcon LoadIcon(QString file_path)
 {
+	static struct {
+		QMutex lck;
+		QMap<QString, QIcon> d;
+	} icon_cache;
+	QMutexLocker locker(&icon_cache.lck);
+	if (icon_cache.d.contains(file_path)) {
+		auto it = icon_cache.d.find(file_path);
+		return it.value();
+	}
 	QFileInfo file_info(file_path);
-	QFileIconProvider icon;
-	return icon.icon(file_info);
+	QFileIconProvider provider;
+	QIcon &ico = provider.icon(file_info);
+	for (auto qs : ico.availableSizes()) {
+		if (!ico.pixmap(qs).isNull()) {
+			icon_cache.d.insert(file_path, ico);
+			return ico;
+		}
+	}
+	ico = QIcon(":/OpenArk/revtools/default.ico");
+	icon_cache.d.insert(file_path, ico);
+	return ico;
 }
 
 bool IsContainAction(QMenu *menu, QObject *obj)
@@ -154,6 +172,12 @@ int GetCurViewRow(QAbstractItemView *view)
 int GetCurViewColumn(QAbstractItemView *view)
 {
 	return view->currentIndex().column();
+}
+
+QModelIndex GetCurItemView(QAbstractItemView *view, int column)
+{
+	auto idx = view->currentIndex();
+	return idx.sibling(idx.row(), column);
 }
 
 QString GetCurItemViewData(QAbstractItemView *view, int column)

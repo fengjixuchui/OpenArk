@@ -89,7 +89,7 @@ LR"(.mm [show os memory]
 .mm w 1234 40000 cccc9090 [write process(pid=1234) memory, 0x40000=>0xcc 0xcc 0x90 0x90)" },
 
 { L".fs", "CmdFileEditor", LR"(file editor)",
-LR"(.fs [show os memory]
+LR"(.fs [edit file data]
 .fs i c:\my.txt [show my.txt information]
 .fs r c:\my.txt 0 100/all [read my.txt, 0:0x100/all]
 .fs w c:\my.txt 0 cccc9090 [write my.txt, 0x0=>0xcc 0xcc 0x90 0x90)" },
@@ -680,7 +680,7 @@ Q_INVOKABLE void Cmds::CmdMemoryEditor(QString cmd, QStringList argv)
 	if (argc == 4) {
 		DWORD pid = VariantInt(argv[1].toStdString(), 10);
 		if (argv[0] == "r") {
-			HANDLE phd = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
+			HANDLE phd = OpenProcessWrapper(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
 			ON_SCOPE_EXIT([&phd] {if (phd) CloseHandle(phd); });
 			if (!phd) return ERR(L"OpenProcess pid:%d err:%d", pid, GetLastError());
 			DWORD64 addr = VariantInt64(argv[2].toStdString());
@@ -697,7 +697,7 @@ Q_INVOKABLE void Cmds::CmdMemoryEditor(QString cmd, QStringList argv)
 			return CmdOutput("%s", hexdump.c_str());
 		}
 		if (argv[0] == "w") {
-			HANDLE phd = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_WRITE, FALSE, pid);
+			HANDLE phd = OpenProcessWrapper(PROCESS_QUERY_INFORMATION | PROCESS_VM_WRITE, FALSE, pid);
 			ON_SCOPE_EXIT([&phd] {if (phd) CloseHandle(phd); });
 			if (!phd) return ERR(L"OpenProcess pid:%d err:%d", pid, GetLastError());
 			DWORD64 addr = VariantInt64(argv[2].toStdString());

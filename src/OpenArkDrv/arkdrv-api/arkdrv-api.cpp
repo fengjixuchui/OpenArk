@@ -36,6 +36,14 @@ bool ConnectDriver()
 	return true;
 }
 
+bool DisconnectDriver()
+{
+	if (arkdrv == INVALID_HANDLE_VALUE) return true;
+	CloseHandle(arkdrv);
+	arkdrv = INVALID_HANDLE_VALUE;
+	return true;
+}
+
 bool IoControlDriver(DWORD ctlcode, DWORD op, PVOID inbuf, DWORD inlen, PVOID *outbuf, DWORD *outlen)
 {
 	DWORD retlen = 0;
@@ -70,7 +78,7 @@ bool IoControlDriver(DWORD ctlcode, DWORD op, PVOID inbuf, DWORD inlen, PVOID *o
 
 	*outbuf = NULL;
 	auto bufsize = retlen;
-	auto buf = (PDRIVER_INFO)calloc(bufsize, 1);
+	auto buf = (PVOID)calloc(bufsize, 1);
 	if (!buf) return false;
 	if (!DeviceIoControl(
 		arkdrv,
@@ -91,6 +99,41 @@ bool IoControlDriver(DWORD ctlcode, DWORD op, PVOID inbuf, DWORD inlen, PVOID *o
 	return true;
 }
 
+bool IoControlDriver(DWORD ctlcode, DWORD op, const std::wstring &indata, std::string &outdata)
+{
+	if (!ConnectDriver()) return false;
+	DWORD outlen;
+	CHAR *info;
+	WCHAR *tempdata = NULL;
+	DWORD tempsize = 0;
+	if (indata.size()) {
+		tempdata = (WCHAR*)indata.c_str();
+		tempsize = (indata.size() + 1) * 2;
+	}
+	bool ret = IoControlDriver(ctlcode, op, (PVOID)tempdata, tempsize, (PVOID*)&info, &outlen);
+	if (!ret) return false;
+	outdata.assign(info, outlen);
+	free(info);
+	return true;
+}
+bool IoControlDriver(DWORD ctlcode, DWORD op, const std::string &indata, std::string &outdata)
+{
+	if (!ConnectDriver()) return false;
+	DWORD outlen;
+	CHAR *info;
+	CHAR *tempdata = NULL;
+	DWORD tempsize = 0;
+	if (indata.size()) {
+		tempdata = (CHAR*)indata.c_str();
+		tempsize = indata.size();
+	}
+	bool ret = IoControlDriver(ctlcode, op, (PVOID)tempdata, tempsize, (PVOID*)&info, &outlen);
+	if (!ret) return false;
+	outdata.assign(info, outlen);
+	free(info);
+	return true;
+}
+
 bool HeartBeatPulse()
 {
 	if (!ConnectDriver()) return false;
@@ -101,75 +144,5 @@ bool HeartBeatPulse()
 	return ret;
 }
 
-bool DriverEnumInfo(std::vector<DRIVER_ITEM> &infos)
-{
-	infos.clear();
-	DWORD op = DRIVER_ENUM_INFO;
-	PDRIVER_INFO drivers;
-	DWORD outlen;
-	bool ret = IoControlDriver(IOCTL_ARK_DRIVER, op, NULL, 0, (PVOID*)&drivers, &outlen);
-	if (!ret) return false;
-	for (int i = 0; i < drivers->count; i++) {
-		infos.push_back(drivers->items[i]);
-	}
-	free(drivers);
-	return true;
-}
-bool NotifyPatch(NOTIFY_TYPE type, ULONG64 routine);
-bool NotifyPatchRegularly(NOTIFY_TYPE type, ULONG64 routine, int interval);
-bool NotifyRemove(NOTIFY_TYPE type, ULONG64 routine)
-{
-	if (routine == 0) return false;
-	NOTIFY_REMOVE_INFO info;
-	info.type = type;
-	info.item = routine;
-	bool ret = IoControlDriver(IOCTL_ARK_NOTIFY, NOTIFY_REMOVE, &info, sizeof(info), NULL, 0);
-	return ret;
-}
-bool NotifyRemoveRegularly(NOTIFY_TYPE type, ULONG64 routine, int interval);
-bool NotifyEnum(DWORD op, std::vector<ULONG64> &routines)
-{
-	routines.clear();
-	PNOTIFY_INFO notify;
-	DWORD outlen;
-	bool ret = IoControlDriver(IOCTL_ARK_NOTIFY, op, NULL, 0, (PVOID*)&notify, &outlen);
-	if (!ret) return false;
-	for (int i = 0; i < notify->count; i++) {
-		routines.push_back(notify->items[i]);
-	}
-	free(notify);
-	return true;
-}
-bool NotifyEnumProcess(std::vector<ULONG64> &routines)
-{
-	return NotifyEnum(NOTIFY_ENUM_PROCESS, routines);
-}
-bool NotifyEnumThread(std::vector<ULONG64> &routines)
-{
-	return NotifyEnum(NOTIFY_ENUM_THREAD, routines);
-}
-bool NotifyEnumImage(std::vector<ULONG64> &routines)
-{
-	return NotifyEnum(NOTIFY_ENUM_IMAGE, routines);
-}
-bool NotifyEnumRegistry(std::vector<ULONG64> &routines)
-{
-	return NotifyEnum(NOTIFY_ENUM_REGISTRY, routines);
-}
-bool MemoryRead(ULONG64 addr, ULONG size, std::string &readbuf)
-{
-	if (!size) return false;
-	MEMORY_IN memin;
-	memin.addr = addr;
-	memin.size = size;
-	DWORD outlen;
-	PMEMORY_OUT memout;
-	bool ret = IoControlDriver(IOCTL_ARK_MEMORY, MEMORY_READ, &memin, sizeof(memin), (PVOID*)&memout, &outlen);
-	if (!ret)	 return false;
-	readbuf.resize(memout->size);
-	memcpy(&readbuf[0], memout->readbuf, memout->size);
-	free(memout);
-	return true;
-}
 } // namespace IArkDrv
 #endif

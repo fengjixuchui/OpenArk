@@ -16,16 +16,9 @@
 #pragma once
 #include <QtWidgets/QMainWindow>
 #include "ui_openark.h"
+#include "common/config/config.h"
 
 class Cmds;
-
-#define TAB_PROCESS 0
-#define TAB_KERNEL 1
-#define TAB_CODERKIT 2
-#define TAB_SCANNER 3
-#define TAB_BUNDLER 4
-#define TAB_UTILITIES 5
-#define TAB_REVERSE 6
 
 class OpenArk : public QMainWindow {
 	Q_OBJECT
@@ -34,6 +27,7 @@ public:
 
 protected:
 	bool eventFilter(QObject *obj, QEvent *e);
+	void changeEvent(QEvent *e);
 
 signals:
 	void signalRefresh();
@@ -75,6 +69,8 @@ public:
 
 private:
 	Cmds *cmds_;
+	QSize old_window_size_;
+	QPoint old_window_pos_;
 	QTimer *chkupt_timer_;
 	QToolBar *stool_;
 	Ui::OpenArkWindow ui;
